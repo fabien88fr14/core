@@ -204,7 +204,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: TPLinkConfigEntry) -> bo
             f"Unexpected device found at {host}; expected {entry.unique_id}, found {found_mac}"
         )
 
-    parent_coordinator = TPLinkDataUpdateCoordinator(hass, device, timedelta(seconds=5))
+    parent_coordinator = TPLinkDataUpdateCoordinator(hass, device, timedelta(seconds=1))
     child_coordinators: list[TPLinkDataUpdateCoordinator] = []
 
     # The iot HS300 allows a limited number of concurrent requests and fetching the
