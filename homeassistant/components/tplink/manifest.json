@@ -4,6 +4,7 @@
   "codeowners": ["@rytilahti", "@bdraco", "@sdb9696"],
   "config_flow": true,
   "dependencies": ["network"],
+  "version": "2024.9.1",
   "dhcp": [
     {
       "registered_devices": true
