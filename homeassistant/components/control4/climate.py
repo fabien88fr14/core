@@ -58,12 +58,14 @@ C4_TO_HA_HVAC_MODE = {
 
 HA_TO_C4_HVAC_MODE = {v: k for k, v in C4_TO_HA_HVAC_MODE.items()}
 
-# Map Control4 HVAC state to Home Assistant HVAC action
+# Map Control4 HVAC states to Home Assistant HVAC actions
 C4_TO_HA_HVAC_ACTION = {
-    "heating": HVACAction.HEATING,
-    "cooling": HVACAction.COOLING,
-    "idle": HVACAction.IDLE,
     "off": HVACAction.OFF,
+    "heat": HVACAction.HEATING,
+    "cool": HVACAction.COOLING,
+    "idle": HVACAction.IDLE,
+    "dry": HVACAction.DRYING,
+    "fan": HVACAction.FAN,
 }
 
 
@@ -235,8 +237,17 @@ class Control4Climate(Control4Entity, ClimateEntity):
         c4_state = data.get(CONTROL4_HVAC_STATE)
         if c4_state is None:
             return None
-        # Convert state to lowercase for mapping
-        return C4_TO_HA_HVAC_ACTION.get(str(c4_state).lower())
+        action = C4_TO_HA_HVAC_ACTION.get(str(c4_state).lower())
+        # Substring match for multi-stage systems that report
+        # e.g. "Stage 1 Heat", "Stage 2 Cool"
+        if action is None:
+            if "heat" in str(c4_state).lower():
+                action = HVACAction.HEATING
+            elif "cool" in str(c4_state).lower():
+                action = HVACAction.COOLING
+        if action is None:
+            _LOGGER.debug("Unknown HVAC state received from Control4: %s", c4_state)
+        return action
 
     @property
     def target_temperature(self) -> float | None:

@@ -278,6 +278,12 @@ class FritzBoxTools(DataUpdateCoordinator[UpdateCoordinatorDataType]):
                     "call_deflections"
                 ] = await self.async_update_call_deflections()
         except FRITZ_EXCEPTIONS as ex:
+            _LOGGER.debug(
+                "Reload %s due to error '%s' to ensure proper re-login",
+                self.config_entry.title,
+                ex,
+            )
+            self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="update_failed",
@@ -467,8 +473,7 @@ class FritzBoxTools(DataUpdateCoordinator[UpdateCoordinatorDataType]):
             self._devices[dev_mac].update(dev_info, consider_home)
             return False
 
-        device = FritzDevice(dev_mac, dev_info.name)
-        device.update(dev_info, consider_home)
+        device = FritzDevice(dev_mac, dev_info, consider_home)
         self._devices[dev_mac] = device
 
         # manually register device entry for new connected device
@@ -825,6 +830,21 @@ class AvmWrapper(FritzBoxTools):
             NewIPv4Address=ip_address,
             NewDisallow="0" if turn_on else "1",
         )
+
+    async def async_get_current_user_rights(self) -> dict[str, Any]:
+        """Call X_AVM-DE_GetCurrentUser service."""
+
+        result = await self._async_service_call(
+            "LANConfigSecurity",
+            "1",
+            "X_AVM-DE_GetCurrentUser",
+        )
+
+        user_rights = xmltodict.parse(result["NewX_AVM-DE_CurrentUserRights"])["rights"]
+
+        return {
+            k: user_rights["access"][idx] for idx, k in enumerate(user_rights["path"])
+        }
 
     async def async_wake_on_lan(self, mac_address: str) -> dict[str, Any]:
         """Call X_AVM-DE_WakeOnLANByMACAddress service."""

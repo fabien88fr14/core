@@ -307,7 +307,8 @@ class HomematicipWaterFlowSensor(HomematicipGenericEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the state."""
-        return self.functional_channel.waterFlow
+        channel = self.get_channel_or_raise()
+        return channel.waterFlow
 
 
 class HomematicipWaterVolumeSensor(HomematicipGenericEntity, SensorEntity):
@@ -555,16 +556,8 @@ class HomematicipAbsoluteHumiditySensor(HomematicipGenericEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Return the state."""
-        if self.functional_channel is None:
-            return None
-
-        value = self.functional_channel.vaporAmount
-
-        # Handle case where value might be None
-        if (
-            self.functional_channel.vaporAmount is None
-            or self.functional_channel.vaporAmount == ""
-        ):
+        value = self._device.vaporAmount
+        if value is None or value == "":
             return None
 
         return round(value, 3)
